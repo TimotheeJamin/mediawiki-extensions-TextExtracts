@@ -18,6 +18,7 @@ use Title;
 use WANObjectCache;
 use Wikimedia\ParamValidator\ParamValidator;
 use WikiPage;
+use ApprovedRevs;
 
 /**
  * @license GPL-2.0-or-later
@@ -272,12 +273,19 @@ class ApiQueryExtracts extends ApiQueryBase {
 		}
 		$request = [
 			'action' => 'parse',
-			'page' => $page->getTitle()->getPrefixedText(),
+			// 'page' => $page->getTitle()->getPrefixedText(), //['page' is set just below if no approved revision exists -- TJ]
 			'prop' => 'text',
 			// Invokes special handling when using partial wikitext (T168743)
 			'sectionpreview' => 1,
 			'wrapoutputclass' => '',
 		];
+		// [Use approved revision if it exists -- TJ]
+		if ( class_exists( 'ApprovedRevs' ) && is_numeric( $revid = ApprovedRevs::getApprovedRevID( $page->getTitle() ) ) ) {
+			$request['oldid'] = $revid;
+		} else {
+			$request['page'] = $page->getTitle()->getPrefixedText();
+		}
+
 		if ( $this->params['intro'] ) {
 			$request['section'] = 0;
 		}
